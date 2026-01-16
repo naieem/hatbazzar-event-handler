@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.gitignore
+docker-compose.yml
+build
+npm-debug.log
+.env*
+build
+generated-client

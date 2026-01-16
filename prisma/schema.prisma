@@ -1,0 +1,245 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  passwordHash        String?
+  name                String?
+  phone               String?
+  emailVerified       DateTime?            @map("email_verified")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  address             Address?
+  image               String?
+  isOneTimeUser       Boolean              @default(false)
+  role                Role?
+  accounts            Account[]
+  sessions            Session[]
+  // Optional for WebAuthn support
+  Authenticator       Authenticator[]
+  orders              Order[]
+  products            Product[]
+  comments            Comments[]
+  productReviews      ProductReviews[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@index([email])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// Optional for WebAuthn support
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  line1      String?
+  line2      String?
+  city       String?
+  state      String?
+  postalCode String?
+  country    String?
+  phone      String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id             String           @id @default(uuid())
+  sku            String           @unique
+  name           String
+  description    String?
+  imageUrl       String
+  stockQuantity  Int
+  sellingPrice   Int              @default(0)
+  originalPrice  Int              @default(0)
+  isActive       Boolean          @default(false)
+  isFeatured     Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  createdBy      String
+  categoryId     String
+  category       ProductCategory  @relation(fields: [categoryId], references: [id])
+  owner          User?            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  updatedAt      DateTime         @updatedAt
+  orderItems     OrderItem[]
+  comments       Comments[]
+  productReviews ProductReviews[]
+}
+
+model ProductCategory {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@index([name])
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  userId      String
+  contactName String      @default("")
+  status      OrderStatus @default(PENDING)
+  totalAmount Decimal     @db.Decimal(10, 2)
+  currency    String      @default("USD")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation(fields: [userId], references: [id])
+  items       OrderItem[]
+  payment     Payment?
+}
+
+model OrderItem {
+  id         String  @id @default(uuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  unitPrice  Decimal @db.Decimal(10, 2)
+  totalPrice Decimal @db.Decimal(10, 2)
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id])
+
+  @@unique([orderId, productId])
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  orderId       String        @unique
+  provider      String
+  status        PaymentStatus
+  transactionId String?
+  amount        Decimal       @db.Decimal(10, 2)
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Comments {
+  id         String   @id @default(uuid())
+  productId  String
+  content    String
+  isApproved Boolean? @default(false)
+  createdAt  DateTime @default(now())
+  createdBy  String
+  user       User?    @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  product    Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // updatedAt     DateTime @updatedAt
+}
+
+model ProductReviews {
+  id         String   @id @default(uuid())
+  productId  String
+  content    String
+  title      String
+  rating     Int
+  isApproved Boolean? @default(false)
+  createdAt  DateTime @default(now())
+  createdBy  String
+  user       User?    @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  product    Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // updatedAt     DateTime @updatedAt
+}

@@ -1,0 +1,29 @@
+{
+  "name": "kafka-consumer",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun ./src/index.ts",
+    "build": "bun build ./src/index.ts --outdir ./build --target bun",
+    "generate": "bunx --bun prisma generate"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/pg": "^8.16.0",
+    "prisma": "^7.2.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "@types/bcrypt": "^6.0.0",
+    "bcrypt": "^6.0.0",
+    "ioredis": "^5.8.2",
+    "kafkajs": "^2.2.4",
+    "pg": "^8.16.3",
+    "resend": "^6.6.0"
+  }
+}
