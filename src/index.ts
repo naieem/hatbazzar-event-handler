@@ -1,4 +1,4 @@
-import { ForgotPasswordEventHandler, OrderEventHandlers, ProductEventHandlers, ReviewEventHandlers } from "./handlers";
+import { ForgotPasswordEventHandler, NewsletterEventHandlers, OrderEventHandlers, ProductEventHandlers, ReviewEventHandlers } from "./handlers";
 import { subscriber } from "./redis"
 
 console.log("📨 Event handler started");
@@ -12,7 +12,8 @@ const redisHandlers: Record<string, (event: any) => Promise<void>> = {
     "review.events": ReviewEventHandlers,
     "product.events": ProductEventHandlers,
     "order.events":OrderEventHandlers,
-    "forgotPassword.events":ForgotPasswordEventHandler
+    "forgotPassword.events":ForgotPasswordEventHandler,
+    "newsletter.events":NewsletterEventHandlers
 }
 
 subscriber.psubscribe("*.events", (err) => {

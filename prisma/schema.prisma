@@ -204,6 +204,18 @@ model OrderItem {
   @@unique([orderId, productId])
 }
 
+model NewsletterSubscriber {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  isSubscribed     Boolean   @default(true)
+  subscribedAt     DateTime  @default(now())
+  unsubscribedAt   DateTime?
+  unsubscribeToken String    @unique @default(cuid())
+
+  @@index([email])
+  @@index([unsubscribeToken])
+}
+
 model Payment {
   id            String        @id @default(uuid())
   orderId       String        @unique
