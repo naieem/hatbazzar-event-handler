@@ -56,14 +56,48 @@ async function createProductHandler(data: Product & { variants: ProductVariant[]
  * 
  * @param {Partial<Product>} data 
  */
-async function updateProductHandler(data: Partial<Product>) {
-    await prisma.product.update({
+async function updateProductHandler(data: Partial<Product & { variants: ProductVariant[] }>) {
+    const { variants, ...obj } = data
+    const product = await prisma.product.update({
         where: {
             id: data.id,
         },
         data: {
-            ...data,
+            ...obj,
         },
+        include: {
+            productVariants: true
+        }
     })
+
+    const allVariants = variants?.map((v) => v.id)
+    const removedVariants = product.productVariants.filter((v) => !allVariants?.includes(v.id)).map((v) => v.id)
+
+    await prisma.$transaction([
+        prisma.productVariant.deleteMany({
+            where: {
+                id: {
+                    in: removedVariants
+                }
+            }
+        }),
+        ...variants!.map((variant: ProductVariant) => {
+            return prisma.productVariant.upsert({
+                where: {
+                    id: variant.id
+                },
+                create: {
+                    name: variant.name,
+                    id: variant.id,
+                    sku: variant.sku,
+                    stock: variant.stock,
+                    productId: product.id,
+                    price: variant.price,
+                    attributes: variant.attributes
+                },
+                update: variant,
+            })
+        })
+    ])
     console.log("product updated with id " + data.id)
 }
