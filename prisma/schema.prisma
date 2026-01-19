@@ -143,25 +143,26 @@ model Address {
 }
 
 model Product {
-  id             String           @id @default(uuid())
-  sku            String           @unique
-  name           String
-  description    String?
-  imageUrl       String
-  stockQuantity  Int
-  sellingPrice   Int              @default(0)
-  originalPrice  Int              @default(0)
-  isActive       Boolean          @default(false)
-  isFeatured     Boolean          @default(false)
-  createdAt      DateTime         @default(now())
-  createdBy      String
-  categoryId     String
-  category       ProductCategory  @relation(fields: [categoryId], references: [id])
-  owner          User?            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  updatedAt      DateTime         @updatedAt
-  orderItems     OrderItem[]
-  comments       Comments[]
-  productReviews ProductReviews[]
+  id              String           @id @default(uuid())
+  sku             String           @unique
+  name            String
+  description     String?
+  imageUrl        String
+  stockQuantity   Int
+  sellingPrice    Int              @default(0)
+  originalPrice   Int              @default(0)
+  isActive        Boolean          @default(false)
+  isFeatured      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  createdBy       String
+  categoryId      String
+  category        ProductCategory  @relation(fields: [categoryId], references: [id])
+  owner           User?            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  updatedAt       DateTime         @updatedAt
+  orderItems      OrderItem[]
+  comments        Comments[]
+  productReviews  ProductReviews[]
+  productVariants ProductVariant[]
 }
 
 model ProductCategory {
@@ -175,6 +176,19 @@ model ProductCategory {
   products    Product[]
 
   @@index([name])
+}
+
+model ProductVariant {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  sku        String   @unique
+  name       String
+  price      Float
+  stock      Int
+  attributes Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Order {

@@ -1,5 +1,15 @@
 import type { Product } from "../../generated-client/client"
+import type { ProductVariantCreateManyInput } from "../../generated-client/models"
 import { prisma } from "../prisma"
+
+type ProductVariant = {
+    id: string
+    sku: string
+    name: string
+    price: number
+    stock: number
+    attributes: Record<"size" | "color", string>
+}
 
 const handler: Record<string, (data: any) => Promise<void>> = {
     "CREATE_PRODUCT": createProductHandler,
@@ -19,11 +29,24 @@ export const ProductEventHandlers = async <T>(data: {
  * 
  * @param {Product} data 
  */
-async function createProductHandler(data: Product) {
+async function createProductHandler(data: Product & { variants: ProductVariant[] }) {
+    const { variants, ...obj } = data
     const product = await prisma.product.create({
         data: {
-            ...data,
+            ...obj,
         }
+    })
+
+    await prisma.productVariant.createMany({
+        data: variants.map((variant): ProductVariantCreateManyInput => ({
+            name: variant.name,
+            id: variant.id,
+            sku: variant.sku,
+            stock: variant.stock,
+            productId: product.id,
+            price: variant.price,
+            attributes: variant.attributes
+        }))
     })
     console.log(`new product created :${product.id}`)
 }
@@ -42,5 +65,5 @@ async function updateProductHandler(data: Partial<Product>) {
             ...data,
         },
     })
-    console.log("product updated with id "+ data.id)
+    console.log("product updated with id " + data.id)
 }
